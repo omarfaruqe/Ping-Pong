@@ -8,7 +8,14 @@
 
 #import "GameScene.h"
 
+@interface GameScene()
+@property (strong, nonatomic) UITouch *leftPaddleMotivatingTouch;
+@property (strong, nonatomic) UITouch *rightPaddleMotivatingTouch;
+
+@end
+
 @implementation GameScene
+static const CGFloat kTrackPixelsPerSecond = 1000;
 
 -(void)didMoveToView:(SKView *)view {
     self.backgroundColor = [SKColor blackColor];
@@ -22,14 +29,56 @@
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
     /* Called when a touch begins */
-    
     for (UITouch *touch in touches) {
-        CGPoint location = [touch locationInNode:self];
+        CGPoint p = [touch locationInNode:self];
+        NSLog(@"\n%f %f %f %f",p.x, p.y, self.frame.size.height, self.frame.size.width);
+        if (p.x < self.frame.size.width * 0.3) {
+            self.leftPaddleMotivatingTouch = touch;
+            NSLog(@"Left");
+        }
+        else if (p.x > self.frame.size.width * 0.7){
+            self.rightPaddleMotivatingTouch = touch;
+            NSLog(@"Right");
+        }
+        else{
+            SKNode *ball = [self childNodeWithName:@"ball"];
+            ball.physicsBody.velocity = CGVectorMake(ball.physicsBody.velocity.dx * 2.0, ball.physicsBody.velocity.dy);
+        }
     }
+    [self trackPaddlesToMotivatingTouches];
+}
+
+- (void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
+    
+}
+
+- (void) touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
+    
+}
+-(void) touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
+    
 }
 
 -(void)update:(CFTimeInterval)currentTime {
-    /* Called before each frame is rendered */
+    
+}
+
+- (void) trackPaddlesToMotivatingTouches{
+    id a = @[@{@"node":[self childNodeWithName:@"left_paddle"], @"touch": self.leftPaddleMotivatingTouch ?: [NSNull null]},
+             @{@"node":[self childNodeWithName:@"right_paddle"], @"touch": self.rightPaddleMotivatingTouch ?: [NSNull null]}];
+    
+    for(NSDictionary *o in a){
+        SKNode *node = o[@"node"];
+        UITouch *touch = o[@"touch"];
+        if([[NSNull null] isEqual:touch])
+            continue;
+        
+        CGFloat yPos = [touch locationInNode:self].y;
+        NSTimeInterval duratino = ABS(yPos - node.position.y) / kTrackPixelsPerSecond;
+        
+        SKAction *moveAction = [SKAction moveToY:yPos duration:duratino];
+        [node runAction:moveAction withKey:@"moving!"];
+    }
 }
 
 @end
